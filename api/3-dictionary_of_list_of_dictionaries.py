@@ -60,3 +60,4 @@ def fetch_employee_progress():
 
 if __name__ == "__main__":
     fetch_employee_progress()
+    
