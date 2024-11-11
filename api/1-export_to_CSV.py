@@ -2,61 +2,52 @@
 """
 This module fetches data from an API and exports it to a CSV file.
 """
+
 import csv
 import requests
 import sys
 
 
-def fetch_employee_progress(employee_id):
-    """
-    Fetches to-do progress of an employee by ID
-    """
-    # check if employee_id is an integer
-    if not isinstance(employee_id, int):
-        raise TypeError("employee_id must be an integer.")
-
-    # urls with data to be fetched
-    base_url = "https://jsonplaceholder.typicode.com/"
-    user_url = f"{base_url}users/{employee_id}"
-    todo_url = f"{base_url}todos?userId={employee_id}"
-
-    # fetch to-do list data
-    todo_response = requests.get(todo_url)
-    if todo_response.status_code != 200:
-        print(f"To-Do List Fetch Fail: {employee_id}")
-        return
-    todo_data = todo_response.json()
-
-    # fetch user data
-    user_response = requests.get(user_url)
-    if user_response.status_code != 200:
-        print(f"Name Fetch Fail: {employee_id}")
-        return
-    user_data = user_response.json()
-
-    # fetch employee name and associated tasks
-    employee_name = user_data.get("username")
-    completed_tasks = [task.get("title") for task in todo_data
-                       if task.get("completed")]
-    total_tasks = len(todo_data)
-
-    # print data to stdout
-    print(f"Employee {employee_name} is done with tasks("
-          f"{len(completed_tasks)}/{total_tasks}):")
-    for task_name in completed_tasks:
-        print(f"\t {task_name}")
-
-    # export data to file in CSV format
-    csv_filename = f"{employee_id}.csv"
-    with open(csv_filename, mode="w", newline='') as file:
-        writer = csv.writer(file, quoting=csv.QUOTE_ALL)
-        for task in todo_data:
-            writer.writerow([employee_id, employee_name,
-                             task.get("completed"), task.get("title")])
-
-    print(f"Data for employee {employee_name} "
-          f"has been exported to {csv_filename}.")
-
-
 if __name__ == "__main__":
-    fetch_employee_progress(int(sys.argv[1]))
+    # Check if the script receives the employee ID as an argument
+    if len(sys.argv) != 2 or not sys.argv[1].isdigit():
+        print("Usage: python3 1-export_to_CSV.py <employee_id>")
+        sys.exit(1)
+
+    # Get the employee ID from the command line argument
+    employee_id = int(sys.argv[1])
+
+    # Define the base URL for the API
+    base_url = "https://jsonplaceholder.typicode.com"
+
+    # Fetch user data
+    user_response = requests.get(f"{base_url}/users/{employee_id}")
+    if user_response.status_code != 200:
+        print("Employee not found")
+        sys.exit(1)
+
+    user_data = user_response.json()
+    username = user_data.get("username")
+
+    # Fetch the user's TODO list
+    todos_response = requests.get(f"{base_url}/todos?userId={employee_id}")
+    todos = todos_response.json()
+
+    # Create a CSV file named after the employee ID
+    csv_filename = f"{employee_id}.csv"
+
+    # Write data to the CSV file
+    with open(
+        csv_filename, mode="w", newline="", encoding="utf-8"
+    ) as csv_file:
+        writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
+        for task in todos:
+            writer.writerow([
+                employee_id, username, task.get("completed"),
+                task.get("title")
+            ])
+
+    print(
+        f"Data for employee ID {employee_id} has been "
+        f"exported to {csv_filename}"
+    )
